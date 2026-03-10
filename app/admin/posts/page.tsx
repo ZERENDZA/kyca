@@ -20,6 +20,7 @@ export default function AdminPosts() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Post | null>(null)
   const [form, setForm] = useState({ title: "", slug: "", excerpt: "", category: "", image_url: "", published: false })
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   async function load() {
     const res = await fetch("/api/posts")
@@ -30,11 +31,33 @@ export default function AdminPosts() {
   useEffect(() => { load() }, [])
 
   async function save() {
+    let finalImageUrl = form.image_url
+
+    if (imageFile) {
+      const uploadData = new FormData()
+      uploadData.append("file", imageFile)
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadData,
+      })
+
+      if (uploadRes.ok) {
+        const result = await uploadRes.json()
+        finalImageUrl = result.url
+      } else {
+        alert("Failed to upload image")
+        return
+      }
+    }
+
     const method = editing ? "PUT" : "POST"
-    const body = editing ? { ...form, id: editing.id } : form
+    const body = editing ? { ...form, id: editing.id, image_url: finalImageUrl } : { ...form, image_url: finalImageUrl }
     await fetch("/api/posts", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    
     setShowForm(false)
     setEditing(null)
+    setImageFile(null)
     setForm({ title: "", slug: "", excerpt: "", category: "", image_url: "", published: false })
     load()
   }
@@ -70,7 +93,22 @@ export default function AdminPosts() {
             <div><label className="text-sm font-medium">Title</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
             <div><label className="text-sm font-medium">Slug</label><input value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
             <div><label className="text-sm font-medium">Category</label><input value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
-            <div><label className="text-sm font-medium">Image URL</label><input value={form.image_url} onChange={e => setForm({...form, image_url: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
+            <div>
+              <label className="text-sm font-medium">Image Upload</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={e => {
+                  if (e.target.files && e.target.files[0]) {
+                    setImageFile(e.target.files[0])
+                  }
+                }} 
+                className="mt-1 flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium" 
+              />
+              {form.image_url && !imageFile && (
+                 <p className="mt-1 text-xs text-muted-foreground truncate">Current: {form.image_url.split('/').pop()}</p>
+              )}
+            </div>
             <div className="sm:col-span-2"><label className="text-sm font-medium">Excerpt</label><textarea value={form.excerpt} onChange={e => setForm({...form, excerpt: e.target.value})} rows={3} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
             <div className="flex items-center gap-2"><input type="checkbox" id="pub" checked={form.published} onChange={e => setForm({...form, published: e.target.checked})} /><label htmlFor="pub" className="text-sm font-medium">Published</label></div>
           </div>

@@ -3,31 +3,17 @@ import { supabaseAdmin } from "@/lib/supabase"
 
 export async function GET() {
   const { data, error } = await supabaseAdmin
-    .from("gallery")
+    .from("opportunities")
     .select("*")
     .order("created_at", { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // Normalize: ensure image_url is always populated from media_url if missing
-  const normalized = (data || []).map((item: any) => ({
-    ...item,
-    image_url: item.image_url || item.media_url || "",
-    media_url: item.media_url || item.image_url || "",
-  }))
-
-  return NextResponse.json(normalized)
+  return NextResponse.json(data)
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  // Save to both columns so both old and new code works
-  const payload = {
-    ...body,
-    media_url: body.media_url || body.image_url || "",
-    image_url: body.image_url || body.media_url || "",
-  }
-  const { data, error } = await supabaseAdmin.from("gallery").insert([payload]).select().single()
+  const { data, error } = await supabaseAdmin.from("opportunities").insert([body]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
@@ -35,19 +21,14 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, ...rest } = body
-  const payload = {
-    ...rest,
-    media_url: rest.media_url || rest.image_url || "",
-    image_url: rest.image_url || rest.media_url || "",
-  }
-  const { data, error } = await supabaseAdmin.from("gallery").update(payload).eq("id", id).select().single()
+  const { data, error } = await supabaseAdmin.from("opportunities").update(rest).eq("id", id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
 
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
-  const { error } = await supabaseAdmin.from("gallery").delete().eq("id", id)
+  const { error } = await supabaseAdmin.from("opportunities").delete().eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

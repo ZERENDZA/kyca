@@ -1,37 +1,40 @@
 import Link from "next/link"
 import { Briefcase, GraduationCap, Calendar, MapPin, ArrowRight, Clock } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
-const opportunities = [
-  {
-    type: "Job",
-    icon: Briefcase,
-    title: "Software Engineer — Remote",
-    org: "TechBridge Africa",
-    location: "Remote / Nigeria",
-    deadline: "April 10, 2026",
-    tag: "Technology",
-  },
-  {
-    type: "Scholarship",
-    icon: GraduationCap,
-    title: "Kamwe Heritage Scholarship 2026",
-    org: "KYCA Foundation",
-    location: "Nigeria & Cameroon",
-    deadline: "April 30, 2026",
-    tag: "Education",
-  },
-  {
-    type: "Event",
-    icon: Calendar,
-    title: "Annual Kamwe Cultural Festival",
-    org: "KYCA Events",
-    location: "Michika, Adamawa State",
-    deadline: "May 10, 2026",
-    tag: "Culture",
-  },
-]
+type Event = {
+  id: string
+  title: string
+  description: string | null
+  event_date: string
+  location: string | null
+  status: string
+  featured: boolean
+}
 
-export function FeaturedOpportunities() {
+async function getFeaturedEvents(): Promise<Event[]> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, title, description, event_date, location, status, featured")
+    .eq("featured", true)
+    .order("event_date", { ascending: true })
+    .limit(3)
+
+  if (error) { console.error("Error fetching events:", error); return [] }
+  return data || []
+}
+
+function formatDeadline(dateString: string) {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "long", day: "numeric", year: "numeric"
+  })
+}
+
+export async function FeaturedOpportunities() {
+  const events = await getFeaturedEvents()
+
+  if (events.length === 0) return null
+
   return (
     <section className="bg-secondary py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -46,22 +49,28 @@ export function FeaturedOpportunities() {
           </Link>
         </div>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {opportunities.map((opp) => (
-            <div key={opp.title} className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg">
+          {events.map((event) => (
+            <div key={event.id} className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg">
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  <opp.icon className="h-3.5 w-3.5" />{opp.type}
+                  <Calendar className="h-3.5 w-3.5" /> Event
                 </span>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">{opp.tag}</span>
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground capitalize">
+                  {event.status}
+                </span>
               </div>
-              <h3 className="mt-4 font-serif text-lg font-semibold text-card-foreground">{opp.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{opp.org}</p>
+              <h3 className="mt-4 font-serif text-lg font-semibold text-card-foreground">{event.title}</h3>
+              {event.description && (
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+              )}
               <div className="mt-auto pt-4 flex flex-col gap-1.5 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {opp.location}</span>
-                <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Deadline: {opp.deadline}</span>
+                {event.location && (
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {event.location}</span>
+                )}
+                <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {formatDeadline(event.event_date)}</span>
               </div>
-              <Link href="/opportunities" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                Apply now <ArrowRight className="h-3.5 w-3.5" />
+              <Link href="/events" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                Learn more <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           ))}

@@ -2,39 +2,27 @@
 
 import { createSession, deleteSession } from "../../lib/session";
 import { redirect } from "next/navigation";
-import { z } from "zod";
-
-const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
 
 export async function login(prevState: any, formData: FormData) {
-  const result = loginSchema.safeParse(Object.fromEntries(formData));
+  const username = formData.get("username") as string
+  const password = formData.get("password") as string
 
-  if (!result.success) {
-    return {
-      error: "Invalid input",
-    };
+  if (!username || !password) {
+    return { error: "Username and password are required" }
   }
 
-  const { username, password } = result.data;
+  const validUsername = process.env.ADMIN_USERNAME || "kyca_admin"
+  const validPassword = process.env.ADMIN_PASSWORD || "Kyca@2026#Secure"
 
-  // Verify against environment variables
-  if (
-    username === process.env.ADMIN_USERNAME &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    await createSession("admin");
-    redirect("/admin");
+  if (username === validUsername && password === validPassword) {
+    await createSession("admin")
+    redirect("/admin")
   } else {
-    return {
-      error: "Invalid username or password",
-    };
+    return { error: "Invalid username or password" }
   }
 }
 
 export async function logout() {
-  await deleteSession();
-  redirect("/admin/login");
+  await deleteSession()
+  redirect("/admin/login")
 }

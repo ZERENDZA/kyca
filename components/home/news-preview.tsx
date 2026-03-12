@@ -21,57 +21,20 @@ async function getLatestPosts(): Promise<Post[]> {
     .order("created_at", { ascending: false })
     .limit(3)
 
-  if (error) {
-    console.error("Error fetching posts:", error)
-    return []
-  }
-
+  if (error) { console.error("Error fetching posts:", error); return [] }
   return data || []
 }
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+    year: "numeric", month: "short", day: "numeric",
   })
 }
 
 export async function NewsPreview() {
   const posts = await getLatestPosts()
 
-  // Fallback articles if no posts in DB yet
-  const fallbackPosts: Post[] = [
-    {
-      id: "1",
-      title: "KYCA Launches Digital Skills Program for Kamwe Youth",
-      slug: "digital-skills-program",
-      excerpt: "Our new initiative brings coding bootcamps and digital literacy training to youth in Michika and surrounding communities.",
-      category: "Programs",
-      image_url: "/images/programs-hero.jpg",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      title: "Kamwe Cultural Festival 2026: Celebrating Our Roots",
-      slug: "cultural-festival-2026",
-      excerpt: "This year's festival returns with traditional dances, Vecemwe language workshops, and vibrant community celebrations.",
-      category: "Events",
-      image_url: "/images/culture.jpg",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      title: "2025 Scholarship Recipients: Stories of Resilience",
-      slug: "scholarship-recipients-2025",
-      excerpt: "Meet the inspiring young Kamwe scholars making strides in universities across Nigeria and beyond.",
-      category: "Education",
-      image_url: "/images/about-hero.jpg",
-      created_at: new Date().toISOString(),
-    },
-  ]
-
-  const displayPosts = posts.length > 0 ? posts : fallbackPosts
+  if (posts.length === 0) return null
 
   return (
     <section className="bg-background py-16 lg:py-24">
@@ -86,28 +49,24 @@ export async function NewsPreview() {
               Stay informed on KYCA programs, community milestones, and youth achievements.
             </p>
           </div>
-          <Link
-            href="/news"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-          >
+          <Link href="/news" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
             All news <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {displayPosts.map((post) => (
+          {posts.map((post) => (
             <Link
               key={post.id}
               href={`/news/${post.slug}`}
               className="group overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-lg"
             >
-              <div className="relative aspect-[16/10] overflow-hidden">
-                <Image
-                  src={post.image_url || "/images/programs-hero.jpg"}
-                  alt={post.title}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+              <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
+                {post.image_url ? (
+                  <Image src={post.image_url} alt={post.title} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                ) : (
+                  <div className="h-full w-full bg-secondary" />
+                )}
                 {post.category && (
                   <div className="absolute left-3 top-3">
                     <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-medium text-card-foreground backdrop-blur-sm">
@@ -122,9 +81,7 @@ export async function NewsPreview() {
                   {post.title}
                 </h3>
                 {post.excerpt && (
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground line-clamp-2">
-                    {post.excerpt}
-                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground line-clamp-2">{post.excerpt}</p>
                 )}
               </div>
             </Link>

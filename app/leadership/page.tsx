@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { Linkedin, Mail } from "lucide-react"
+import { Users } from "lucide-react"
 
 type Leader = {
   id: string
   name: string
   role: string
-  region?: string
-  bio?: string
-  image_url?: string
-  order_index?: number
+  bio: string
+  image_url: string
+  region: string
+  order_index: number
+  is_founder: boolean
 }
 
 export default function LeadershipPage() {
@@ -21,80 +22,101 @@ export default function LeadershipPage() {
   useEffect(() => {
     fetch("/api/leadership")
       .then(r => r.json())
-      .then(data => { setLeaders(Array.isArray(data) ? data : []); setLoading(false) })
-      .catch(() => setLoading(false))
+      .then(data => {
+        const sorted = Array.isArray(data) ? data.sort((a: Leader, b: Leader) => (a.order_index ?? 0) - (b.order_index ?? 0)) : []
+        setLeaders(sorted)
+        setLoading(false)
+      })
   }, [])
+
+  const executives = leaders.filter(l => !l.is_founder)
+  const founders = leaders.filter(l => l.is_founder)
 
   return (
     <>
       {/* Hero */}
-      <section className="bg-secondary py-16 lg:py-24">
+      <section className="bg-secondary py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Our People</p>
-            <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Leadership Team</h1>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Who We Are</p>
+            <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Leadership</h1>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Meet the passionate individuals guiding KYCA's mission to empower Kamwe youth and preserve our cultural heritage.
+              Meet the dedicated leaders driving Kamwe Youth Connect Association forward across Nigeria, Cameroon, and the diaspora.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Team */}
-      <section className="bg-background py-16 lg:py-24">
+      <section className="bg-background py-12 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
-
-          {loading && (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {[...Array(4)].map((_, i) => <div key={i} className="aspect-[4/3] rounded-xl bg-secondary animate-pulse" />)}
+          {loading ? (
+            <div className="py-24 text-center text-muted-foreground">Loading leadership...</div>
+          ) : leaders.length === 0 ? (
+            <div className="py-24 text-center">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Leadership team coming soon.</p>
             </div>
-          )}
-
-          {!loading && leaders.length > 0 && (
+          ) : (
             <>
-              <h2 className="font-serif text-2xl font-bold text-foreground">Leadership</h2>
-              <p className="mt-2 text-sm text-muted-foreground mb-10">The dedicated team leading our organization.</p>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {leaders.map(leader => (
-                  <div key={leader.id} className="group overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-lg">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-                      {leader.image_url ? (
-                        <Image src={leader.image_url} alt={leader.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <span className="font-serif text-4xl font-bold text-primary/30">
-                            {leader.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                          </span>
+              {/* Executive Team */}
+              {executives.length > 0 && (
+                <div className="mb-16">
+                  <h2 className="mb-8 font-serif text-2xl font-bold text-foreground">Executive Team</h2>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {executives.map((leader) => (
+                      <div key={leader.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                        <div className="relative aspect-square overflow-hidden bg-secondary">
+                          {leader.image_url ? (
+                            <Image src={leader.image_url} alt={leader.name} fill className="object-cover object-top" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center font-serif text-5xl font-bold text-muted-foreground">
+                              {leader.name?.[0]}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#1a1207]/70 to-transparent" />
-                      {leader.region && (
-                        <div className="absolute bottom-3 left-3">
-                          <span className="rounded-full bg-primary/90 px-2.5 py-0.5 text-xs font-medium text-primary-foreground">{leader.region}</span>
+                        <div className="p-5">
+                          <h3 className="font-serif text-lg font-bold text-foreground">{leader.name}</h3>
+                          <p className="text-sm font-medium text-primary">{leader.role}</p>
+                          {leader.region && <p className="text-xs text-muted-foreground mt-0.5">{leader.region}</p>}
+                          {leader.bio && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{leader.bio}</p>}
                         </div>
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-serif text-lg font-semibold text-card-foreground">{leader.name}</h3>
-                      <p className="text-sm font-medium text-primary">{leader.role}</p>
-                      {leader.bio && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{leader.bio}</p>}
-                      <div className="mt-4 flex gap-2">
-                        <button className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-primary">
-                          <Mail className="h-4 w-4" />
-                        </button>
-                        <button className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-primary">
-                          <Linkedin className="h-4 w-4" />
-                        </button>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
+                </div>
+              )}
 
-          {!loading && leaders.length === 0 && (
-            <div className="py-24 text-center text-muted-foreground">Leadership team coming soon.</div>
+              {/* Founders */}
+              {founders.length > 0 && (
+                <div>
+                  <h2 className="mb-8 font-serif text-2xl font-bold text-foreground">Founders</h2>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {founders.map((leader) => (
+                      <div key={leader.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                        <div className="relative aspect-square overflow-hidden bg-secondary">
+                          {leader.image_url ? (
+                            <Image src={leader.image_url} alt={leader.name} fill className="object-cover object-top" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center font-serif text-5xl font-bold text-muted-foreground">
+                              {leader.name?.[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-5">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-serif text-lg font-bold text-foreground">{leader.name}</h3>
+                            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">Founder</span>
+                          </div>
+                          <p className="text-sm font-medium text-primary">{leader.role}</p>
+                          {leader.region && <p className="text-xs text-muted-foreground mt-0.5">{leader.region}</p>}
+                          {leader.bio && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{leader.bio}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

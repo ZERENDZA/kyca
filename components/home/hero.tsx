@@ -1,10 +1,27 @@
-"use client"
-
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
-export function Hero() {
+async function getStats() {
+  const [members, programs] = await Promise.all([
+    supabase.from("members").select("id", { count: "exact", head: true }),
+    supabase.from("programs").select("id", { count: "exact", head: true }).eq("published", true),
+  ])
+
+  const memberCount = members.count ?? 0
+  const programCount = programs.count ?? 0
+
+  return [
+    { value: memberCount >= 1000 ? `${(memberCount / 1000).toFixed(1)}k+` : `${memberCount}+`, label: "Members Worldwide" },
+    { value: "3", label: "Countries" },
+    { value: `${programCount}+`, label: "Active Programs" },
+  ]
+}
+
+export async function Hero() {
+  const stats = await getStats()
+
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
       <Image
@@ -54,11 +71,7 @@ export function Hero() {
           </div>
 
           <div className="mt-12 flex flex-wrap gap-8">
-            {[
-              { value: "2,000+", label: "Members Worldwide" },
-              { value: "3", label: "Countries" },
-              { value: "20+", label: "Active Programs" },
-            ].map((stat) => (
+            {stats.map((stat) => (
               <div key={stat.label}>
                 <p className="text-2xl font-bold text-gold-light font-serif sm:text-3xl">{stat.value}</p>
                 <p className="text-xs text-[#a09888] uppercase tracking-wider">{stat.label}</p>

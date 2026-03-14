@@ -14,6 +14,10 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    router.push("/admin");
+  }, [router]);
+
+  useEffect(() => {
     if (state?.success) {
       router.push("/admin");
     }

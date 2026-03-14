@@ -5,6 +5,7 @@ import { getSession } from "./lib/session";
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   
+  /* 
   // Define routes that require authentication
   const isProtectedRoute = path.startsWith("/admin") && path !== "/admin/login";
 
@@ -16,6 +17,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin/login", request.nextUrl));
     }
   }
+  */
 
   // Allow access to login if they aren't authenticated
   // Or if they are authenticated and navigating to login, optionally redirect to dashboard

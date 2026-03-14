@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, FileText, Calendar, Images,
-  Users, BookOpen, CreditCard, Menu, X, LogOut
+  Users, BookOpen, CreditCard, Menu, X, LogOut, TrendingUp
 } from "lucide-react"
 import { useState } from "react"
 
@@ -15,6 +15,7 @@ const navItems = [
   { label: "Gallery", href: "/admin/gallery", icon: Images },
   { label: "Leadership", href: "/admin/leadership", icon: Users },
   { label: "Programs", href: "/admin/programs", icon: BookOpen },
+  { label: "Opportunities", href: "/admin/opportunities", icon: TrendingUp },
   { label: "Members", href: "/admin/members", icon: Users },
   { label: "Payments", href: "/admin/payments", icon: CreditCard },
 ]

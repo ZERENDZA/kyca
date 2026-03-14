@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import Script from "next/script"
 import Link from "next/link"
 import { Heart, Gift, BookOpen, Globe, Users, Check, ArrowRight, Shield } from "lucide-react"
 
-const presetAmounts = [10, 25, 50, 100, 250, 500]
+const presetAmounts = [1000, 2500, 5000, 10000, 25000, 50000]
 
 const causes = [
   {
@@ -46,11 +47,67 @@ export default function DonatePage() {
   const [customAmount, setCustomAmount] = useState("")
   const [selectedCause, setSelectedCause] = useState("general")
   const [frequency, setFrequency] = useState<"once" | "monthly">("once")
+  const [donorName, setDonorName] = useState("")
+  const [donorEmail, setDonorEmail] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState("")
 
   const donationAmount = customAmount ? parseFloat(customAmount) : amount
 
+  function handleDonate() {
+    if (!donorEmail) { setError("Please enter your email address."); return }
+    if (!donationAmount || donationAmount <= 0) { setError("Please select or enter a valid amount."); return }
+    setError("")
+
+    if (!(window as any).PaystackPop) {
+      setError("Payment system not loaded yet. Please wait a moment and try again.")
+      return
+    }
+
+    try {
+      const handler = (window as any).PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+        email: donorEmail,
+        amount: Math.round(donationAmount * 100),
+        currency: "NGN",
+        ref: `kyca-${Date.now()}`,
+        metadata: {
+          custom_fields: [
+            { display_name: "Donor Name", variable_name: "donor_name", value: donorName || "Anonymous" },
+            { display_name: "Cause", variable_name: "cause", value: selectedCause },
+            { display_name: "Frequency", variable_name: "frequency", value: frequency },
+          ],
+        },
+        callback: (response: any) => {
+          fetch("/api/donate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: donorName,
+              email: donorEmail,
+              amount: donationAmount,
+              cause: selectedCause,
+              frequency,
+              reference: response.reference,
+              status: "paid",
+            }),
+          }).then(() => setSubmitted(true))
+        },
+        onClose: () => {},
+      })
+      handler.openIframe()
+    } catch (e: any) {
+      console.error("Paystack error:", e)
+      setError("Payment error: " + (e?.message || JSON.stringify(e)))
+    }
+  }
+
   return (
     <>
+      {/* Load Paystack inline script */}
+      <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
+
       {/* Hero */}
       <section className="bg-secondary py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -106,7 +163,7 @@ export default function DonatePage() {
 
                 {/* Amount Selection */}
                 <div className="mt-8">
-                  <h3 className="font-serif text-lg font-semibold text-card-foreground">Select Amount (USD)</h3>
+                  <h3 className="font-serif text-lg font-semibold text-card-foreground">Select Amount (NGN ₦)</h3>
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     {presetAmounts.map((preset) => (
                       <button
@@ -121,14 +178,14 @@ export default function DonatePage() {
                             : "border border-border bg-background text-foreground hover:border-primary/30"
                         }`}
                       >
-                        ${preset}
+                        ₦{preset.toLocaleString()}
                       </button>
                     ))}
                   </div>
                   <div className="mt-3">
                     <label htmlFor="custom-amount" className="sr-only">Custom Amount</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₦</span>
                       <input
                         id="custom-amount"
                         type="number"
@@ -177,7 +234,7 @@ export default function DonatePage() {
                               />
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              ${cause.raised.toLocaleString()} raised of ${cause.goal.toLocaleString()} goal
+                              ₦{cause.raised.toLocaleString()} raised of ₦{cause.goal.toLocaleString()} goal
                             </p>
                           </div>
                         </div>
@@ -199,6 +256,8 @@ export default function DonatePage() {
                         <input
                           id="donor-name"
                           type="text"
+                          value={donorName}
+                          onChange={(e) => setDonorName(e.target.value)}
                           placeholder="Your name"
                           className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground"
                         />
@@ -208,6 +267,8 @@ export default function DonatePage() {
                         <input
                           id="donor-email"
                           type="email"
+                          value={donorEmail}
+                          onChange={(e) => setDonorEmail(e.target.value)}
                           placeholder="you@example.com"
                           className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground"
                         />
@@ -223,10 +284,30 @@ export default function DonatePage() {
                 </div>
 
                 {/* Submit */}
-                <button className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground transition-all hover:opacity-90">
-                  <Heart className="h-4 w-4" />
-                  Donate {donationAmount ? `$${donationAmount}` : ""} {frequency === "monthly" ? "Monthly" : "Now"}
-                </button>
+                {submitted ? (
+                  <div className="mt-8 rounded-xl border border-accent/30 bg-accent/5 p-6 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+                      <Heart className="h-7 w-7 text-accent" />
+                    </div>
+                    <h3 className="mt-3 font-serif text-lg font-bold text-card-foreground">Thank You!</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Your payment was successful. We are grateful for your support!
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {error && (
+                      <p className="mt-6 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>
+                    )}
+                    <button
+                      onClick={handleDonate}
+                      className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground transition-all hover:opacity-90"
+                    >
+                      <Heart className="h-4 w-4" />
+                      Donate {donationAmount ? `₦${donationAmount.toLocaleString()}` : ""} {frequency === "monthly" ? "Monthly" : "Now"}
+                    </button>
+                  </>
+                )}
 
                 <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Shield className="h-3.5 w-3.5" />
@@ -242,12 +323,12 @@ export default function DonatePage() {
                 <h3 className="font-serif text-lg font-semibold text-card-foreground">Your Impact</h3>
                 <div className="mt-4 flex flex-col gap-3">
                   {[
-                    { amount: "$10", impact: "Provides school supplies for 1 student for a month" },
-                    { amount: "$25", impact: "Funds a Vecemwe language learning module" },
-                    { amount: "$50", impact: "Supports mentorship for 2 youth for 3 months" },
-                    { amount: "$100", impact: "Sponsors a student for a skills training workshop" },
-                    { amount: "$250", impact: "Funds a community cultural preservation event" },
-                    { amount: "$500", impact: "Provides a full scholarship for one semester" },
+                    { amount: "₦1,000", impact: "Provides school supplies for 1 student for a month" },
+                    { amount: "₦5,000", impact: "Funds a Vecemwe language learning module" },
+                    { amount: "₦10,000", impact: "Supports mentorship for 2 youth for 3 months" },
+                    { amount: "₦25,000", impact: "Sponsors a student for a skills training workshop" },
+                    { amount: "₦50,000", impact: "Funds a community cultural preservation event" },
+                    { amount: "₦100,000", impact: "Provides a full scholarship for one semester" },
                   ].map((item) => (
                     <div key={item.amount} className="flex gap-3">
                       <span className="flex h-8 w-14 shrink-0 items-center justify-center rounded-md bg-gold/10 text-xs font-bold text-gold">

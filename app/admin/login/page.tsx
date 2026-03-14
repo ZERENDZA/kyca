@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { login } from "../actions";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,13 @@ import { LockIcon } from "lucide-react";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/admin");
+    }
+  }, [state, router]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center p-4">

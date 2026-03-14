@@ -5,47 +5,20 @@ import { Check, ChevronRight, Users, BookOpen, Globe, Heart, Zap, Music, Leaf, B
 
 const membershipTiers = [
   {
-    id: "free",
-    name: "Free Member",
-    price: "Free",
-    color: "border-gray-200",
-    buttonStyle: "border border-gray-300 text-gray-700 hover:bg-gray-50",
-    features: [
-      "Access to community forum",
-      "Monthly newsletter",
-      "Event notifications",
-      "Basic resource library",
-    ],
-  },
-  {
-    id: "active",
-    name: "Active Member",
-    price: "$10/year",
+    id: "standard",
+    name: "KYCA Member",
+    price: "₦10,000/year",
     color: "border-primary ring-2 ring-primary/20",
     buttonStyle: "bg-primary text-white hover:bg-primary/90",
     popular: true,
     features: [
-      "Everything in Free",
+      "Access to community forum",
+      "Monthly newsletter",
       "Voting rights",
       "Priority event access",
       "Mentorship matching",
       "Skills workshops",
       "Member directory access",
-    ],
-  },
-  {
-    id: "champion",
-    name: "Champion",
-    price: "$25/year",
-    color: "border-amber-400 ring-2 ring-amber-200",
-    buttonStyle: "bg-amber-500 text-white hover:bg-amber-600",
-    features: [
-      "Everything in Active",
-      "Leadership opportunities",
-      "Annual conference (free)",
-      "KYCA merchandise pack",
-      "Recognition on website",
-      "Direct leadership access",
     ],
   },
 ]
@@ -63,7 +36,6 @@ const interests = [
 
 export default function MembershipPage() {
   const [step, setStep] = useState(1)
-  const [selectedTier, setSelectedTier] = useState("active")
   const [selectedInterests, setSelectedInterests] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -94,10 +66,6 @@ export default function MembershipPage() {
     setSubmitting(true)
     setError("")
 
-    const membershipMap: Record<string, string> = {
-      free: "basic", active: "premium", champion: "lifetime"
-    }
-
     try {
       // Save member to Supabase
       const res = await fetch("/api/members", {
@@ -107,8 +75,8 @@ export default function MembershipPage() {
           full_name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          region: formData.location,
-          membership_type: membershipMap[selectedTier] || "basic",
+          location: formData.location,
+          membership_type: "basic",
           status: "active",
           bio: formData.bio,
         })
@@ -124,7 +92,7 @@ export default function MembershipPage() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          membership_type: membershipMap[selectedTier] || "basic",
+          membership_type: "basic",
         })
       })
 
@@ -152,40 +120,30 @@ export default function MembershipPage() {
         {/* Tier Selection */}
         {step <= 3 && (
           <div className="mb-12">
-            <h2 className="font-serif text-2xl font-bold text-center text-[#3d2b1f] mb-2">Choose Your Membership</h2>
-            <p className="text-center text-sm text-gray-500 mb-8">Select the tier that works best for you</p>
-            <div className="grid gap-4 md:grid-cols-3">
-              {membershipTiers.map(tier => (
-                <div
-                  key={tier.id}
-                  onClick={() => setSelectedTier(tier.id)}
-                  className={`relative cursor-pointer rounded-xl border-2 p-6 transition-all ${
-                    selectedTier === tier.id ? tier.color : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  {tier.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-white">Most Popular</span>
-                    </div>
-                  )}
-                  <h3 className="font-serif text-lg font-bold text-[#3d2b1f]">{tier.name}</h3>
-                  <p className="text-2xl font-bold text-primary mt-1 mb-4">{tier.price}</p>
-                  <ul className="space-y-2">
-                    {tier.features.map(f => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => setSelectedTier(tier.id)}
-                    className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors ${tier.buttonStyle}`}
-                  >
-                    {tier.id === "free" ? "Join Free" : tier.id === "active" ? "Become Active" : "Go Champion"}
-                  </button>
+            <h2 className="font-serif text-2xl font-bold text-center text-[#3d2b1f] mb-2">Membership Benefits</h2>
+            <p className="text-center text-sm text-gray-500 mb-8">Join our vibrante community today</p>
+            <div className="flex justify-center">
+              <div className="max-w-md w-full relative rounded-xl border-2 border-primary ring-2 ring-primary/20 p-8 bg-white transition-all">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-white">Official Membership</span>
                 </div>
-              ))}
+                <h3 className="font-serif text-2xl font-bold text-[#3d2b1f]">KYCA Member</h3>
+                <p className="text-3xl font-bold text-primary mt-2 mb-6">₦10,000 <span className="text-sm font-normal text-gray-500">/year</span></p>
+                <ul className="space-y-3 mb-8">
+                  {membershipTiers[0].features.map(f => (
+                    <li key={f} className="flex items-start gap-3 text-sm text-gray-600">
+                      <Check className="h-5 w-5 text-green-500 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => setStep(1)}
+                  className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+                >
+                  Start Registration
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -291,7 +249,7 @@ export default function MembershipPage() {
               ))}
               <div className="flex justify-between border-b border-gray-100 pb-3">
                 <span className="text-gray-500">Membership</span>
-                <span className="font-medium text-primary capitalize">{membershipTiers.find(t => t.id === selectedTier)?.name}</span>
+                <span className="font-medium text-primary">KYCA Member</span>
               </div>
             </div>
             {error && <p className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}

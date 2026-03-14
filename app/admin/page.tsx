@@ -10,6 +10,7 @@ const sections = [
   { label: "Gallery", href: "/admin/gallery", icon: Images, color: "bg-purple-500/10 text-purple-500", api: "/api/gallery" },
   { label: "Leadership", href: "/admin/leadership", icon: Users, color: "bg-orange-500/10 text-orange-500", api: "/api/leadership" },
   { label: "Programs", href: "/admin/programs", icon: BookOpen, color: "bg-pink-500/10 text-pink-500", api: "/api/programs" },
+  { label: "Opportunities", href: "/admin/opportunities", icon: TrendingUp, color: "bg-teal-500/10 text-teal-500", api: "/api/opportunities" },
   { label: "Members", href: "/admin/members", icon: Users, color: "bg-yellow-500/10 text-yellow-500", api: "/api/members" },
   { label: "Payments", href: "/admin/payments", icon: CreditCard, color: "bg-emerald-500/10 text-emerald-500", api: "/api/payments" },
 ]

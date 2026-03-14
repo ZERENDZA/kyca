@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Plus, Trash2, Pencil, Upload, X, Eye, EyeOff } from "lucide-react"
+import { Plus, Trash2, Pencil, X, Eye, EyeOff } from "lucide-react"
+import { ImageInput } from "@/components/admin/ImageInput"
 import { supabase } from "@/lib/supabase"
 import NextImage from "next/image"
 
@@ -23,11 +24,8 @@ export default function AdminEvents() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Event | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [preview, setPreview] = useState<string | null>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [form, setForm] = useState(emptyForm)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   async function load() {
     const res = await fetch("/api/events")
@@ -37,30 +35,11 @@ export default function AdminEvents() {
 
   useEffect(() => { load() }, [])
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setSelectedFile(file)
-    const reader = new FileReader()
-    reader.onload = () => setPreview(reader.result as string)
-    reader.readAsDataURL(file)
-  }
-
-  async function uploadImage(): Promise<string | null> {
-    if (!selectedFile) return form.image_url || null
-    const fileExt = selectedFile.name.split(".").pop()
-    const fileName = `events/${Date.now()}.${fileExt}`
-    const { error } = await supabase.storage.from("gallery").upload(fileName, selectedFile, { upsert: false })
-    if (error) throw new Error(error.message)
-    const { data } = supabase.storage.from("gallery").getPublicUrl(fileName)
-    return data.publicUrl
-  }
 
   async function save() {
     setUploading(true)
     try {
-      const image_url = await uploadImage()
-      const body = { ...form, image_url: image_url || "" }
+      const body = { ...form }
       if (editing) {
         await fetch("/api/events", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, id: editing.id }) })
       } else {
@@ -78,8 +57,6 @@ export default function AdminEvents() {
   function resetForm() {
     setShowForm(false)
     setEditing(null)
-    setSelectedFile(null)
-    setPreview(null)
     setForm(emptyForm)
   }
 
@@ -94,7 +71,6 @@ export default function AdminEvents() {
       published: event.published,
       featured: event.featured || false,
     })
-    setPreview(event.image_url || null)
     setShowForm(true)
   }
 
@@ -111,7 +87,7 @@ export default function AdminEvents() {
           <h1 className="font-serif text-2xl font-bold text-foreground">Events</h1>
           <p className="text-sm text-muted-foreground">{events.length} events</p>
         </div>
-        <button onClick={() => { setShowForm(true); setEditing(null); setForm(emptyForm); setPreview(null) }}
+        <button onClick={() => { setShowForm(true); setEditing(null); setForm(emptyForm) }}
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
           <Plus className="h-4 w-4" /> Add Event
         </button>
@@ -124,25 +100,20 @@ export default function AdminEvents() {
             <button onClick={resetForm}><X className="h-5 w-5 text-muted-foreground" /></button>
           </div>
 
-          <div onClick={() => fileInputRef.current?.click()}
-            className="mb-4 relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary cursor-pointer hover:border-primary transition-colors overflow-hidden"
-            style={{ minHeight: 140 }}>
-            {preview ? (
-              <NextImage src={preview} alt="Preview" fill className="object-cover opacity-80" />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground p-6">
-                <Upload className="h-8 w-8" />
-                <p className="text-sm">Click to upload event image</p>
-              </div>
-            )}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="text-sm font-medium">Title *</label>
-              <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+               <label className="text-sm font-medium">Title *</label>
+               <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div className="sm:col-span-2">
+              <ImageInput 
+                label="Event Image" 
+                value={form.image_url} 
+                onChange={(url: string) => setForm({ ...form, image_url: url })} 
+                helperText="Upload from computer or paste a URL"
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Location</label>
@@ -175,7 +146,7 @@ export default function AdminEvents() {
           <div className="mt-4 flex gap-3">
             <button onClick={save} disabled={uploading}
               className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-              {uploading ? "Saving..." : "Save Event"}
+              {uploading ? "Saving..." : editing ? "Save Changes" : "Create Event"}
             </button>
             <button onClick={resetForm} className="rounded-lg border border-border px-5 py-2 text-sm font-medium hover:bg-secondary">Cancel</button>
           </div>

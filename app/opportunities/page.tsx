@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
+import { useState, useEffect } from "react"
 import {
   Search,
   Briefcase,
@@ -9,115 +8,57 @@ import {
   Calendar,
   MapPin,
   Clock,
-  ArrowRight,
   Filter,
   ExternalLink,
 } from "lucide-react"
 
-const allOpportunities = [
-  {
-    id: 1,
-    type: "Job",
-    icon: Briefcase,
-    title: "Software Engineer - Remote",
-    org: "TechBridge Africa",
-    location: "Remote / Nigeria",
-    deadline: "March 30, 2026",
-    category: "Technology",
-    description: "Build scalable web applications for a leading African tech firm. React, Node.js, and cloud experience preferred.",
-  },
-  {
-    id: 2,
-    type: "Scholarship",
-    icon: GraduationCap,
-    title: "Kamwe Heritage Scholarship 2026",
-    org: "KYCA Foundation",
-    location: "Nigeria & Cameroon",
-    deadline: "April 15, 2026",
-    category: "Education",
-    description: "Full tuition scholarship for undergraduate studies in any field. Open to Kamwe youth aged 18-25.",
-  },
-  {
-    id: 3,
-    type: "Job",
-    icon: Briefcase,
-    title: "Community Manager",
-    org: "KYCA",
-    location: "Michika, Nigeria",
-    deadline: "March 20, 2026",
-    category: "Community",
-    description: "Lead community engagement efforts across Adamawa State. Experience in youth mobilization required.",
-  },
-  {
-    id: 4,
-    type: "Internship",
-    icon: Briefcase,
-    title: "Digital Marketing Intern",
-    org: "Kamwe Business Network",
-    location: "Lagos, Nigeria",
-    deadline: "April 1, 2026",
-    category: "Marketing",
-    description: "6-month internship in social media management and content creation. Stipend provided.",
-  },
-  {
-    id: 5,
-    type: "Scholarship",
-    icon: GraduationCap,
-    title: "Women in STEM Grant",
-    org: "Africa Women Foundation",
-    location: "Pan-African",
-    deadline: "May 1, 2026",
-    category: "Education",
-    description: "Research grant for female students pursuing STEM degrees in African universities.",
-  },
-  {
-    id: 6,
-    type: "Job",
-    icon: Briefcase,
-    title: "Agricultural Extension Officer",
-    org: "Adamawa State Agric Board",
-    location: "Michika, Nigeria",
-    deadline: "March 25, 2026",
-    category: "Agriculture",
-    description: "Support farmers in Michika LGA with modern farming techniques and access to markets.",
-  },
-  {
-    id: 7,
-    type: "Volunteer",
-    icon: Calendar,
-    title: "Cultural Festival Volunteers",
-    org: "KYCA Events",
-    location: "Michika, Nigeria",
-    deadline: "May 5, 2026",
-    category: "Culture",
-    description: "Help organize and run the 2026 Kamwe Cultural Festival. All skills welcome.",
-  },
-  {
-    id: 8,
-    type: "Scholarship",
-    icon: GraduationCap,
-    title: "Postgraduate Research Fellowship",
-    org: "Univ. of Maiduguri",
-    location: "Maiduguri, Nigeria",
-    deadline: "June 15, 2026",
-    category: "Education",
-    description: "Fully funded postgraduate research positions in social sciences and development studies.",
-  },
-]
+type Opportunity = {
+  id: string
+  title: string
+  org: string
+  location: string
+  deadline: string
+  type: string
+  tag: string
+  url: string | null
+  published: boolean
+  description?: string
+}
+
+const typeIconMap: Record<string, React.ElementType> = {
+  Job: Briefcase,
+  Internship: Briefcase,
+  Scholarship: GraduationCap,
+  Volunteer: Calendar,
+  Event: Calendar,
+}
 
 const types = ["All", "Job", "Scholarship", "Internship", "Volunteer"]
 const locations = ["All Locations", "Nigeria", "Cameroon", "Remote", "Pan-African"]
 
 export default function OpportunitiesPage() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedType, setSelectedType] = useState("All")
   const [selectedLocation, setSelectedLocation] = useState("All Locations")
 
-  const filtered = allOpportunities.filter((opp) => {
+  useEffect(() => {
+    fetch("/api/opportunities")
+      .then(r => r.json())
+      .then(data => {
+        const published = Array.isArray(data) ? data.filter((o: Opportunity) => o.published) : []
+        setOpportunities(published)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const filtered = opportunities.filter((opp) => {
     const matchesSearch =
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.org.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      opp.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (opp.description ?? "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesType = selectedType === "All" || opp.type === selectedType
     const matchesLocation =
       selectedLocation === "All Locations" || opp.location.includes(selectedLocation.replace("All Locations", ""))
@@ -192,47 +133,78 @@ export default function OpportunitiesPage() {
       {/* Listings */}
       <section className="bg-background py-10 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <p className="mb-6 text-sm text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? "opportunity" : "opportunities"} found
-          </p>
-          {filtered.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-lg font-semibold text-foreground">No opportunities match your search</p>
-              <p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or search terms.</p>
-            </div>
-          ) : (
+          {loading ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {filtered.map((opp) => (
-                <div
-                  key={opp.id}
-                  className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      <opp.icon className="h-3.5 w-3.5" />
-                      {opp.type}
-                    </span>
-                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                      {opp.category}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 font-serif text-lg font-semibold text-card-foreground">{opp.title}</h3>
-                  <p className="text-sm text-primary font-medium">{opp.org}</p>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{opp.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {opp.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" /> {opp.deadline}
-                    </span>
-                  </div>
-                  <button className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
-                    Apply Now <ExternalLink className="h-3.5 w-3.5" />
-                  </button>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-6 animate-pulse">
+                  <div className="h-6 w-24 rounded-full bg-secondary" />
+                  <div className="mt-4 h-5 w-3/4 rounded bg-secondary" />
+                  <div className="mt-2 h-4 w-1/2 rounded bg-secondary" />
+                  <div className="mt-4 h-16 rounded bg-secondary" />
                 </div>
               ))}
             </div>
+          ) : (
+            <>
+              <p className="mb-6 text-sm text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "opportunity" : "opportunities"} found
+              </p>
+              {filtered.length === 0 ? (
+                <div className="py-20 text-center">
+                  <p className="text-lg font-semibold text-foreground">No opportunities match your search</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or search terms.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filtered.map((opp) => {
+                    const OppIcon = typeIconMap[opp.type] ?? Briefcase
+                    return (
+                      <div
+                        key={opp.id}
+                        className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                            <OppIcon className="h-3.5 w-3.5" />
+                            {opp.type}
+                          </span>
+                          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                            {opp.tag}
+                          </span>
+                        </div>
+                        <h3 className="mt-4 font-serif text-lg font-semibold text-card-foreground">{opp.title}</h3>
+                        <p className="text-sm text-primary font-medium">{opp.org}</p>
+                        {opp.description && (
+                          <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{opp.description}</p>
+                        )}
+                        <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5" /> {opp.location}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" /> {opp.deadline}
+                          </span>
+                        </div>
+                        {opp.url ? (
+                          <a
+                            href={opp.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                          >
+                            Apply Now <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : (
+                          <button className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
+                            Apply Now <ExternalLink className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

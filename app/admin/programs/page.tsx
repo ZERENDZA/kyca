@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Plus, Trash2, Pencil, Eye, EyeOff } from "lucide-react"
+import { ImageInput } from "@/components/admin/ImageInput"
 
 type Program = {
   id: string
@@ -120,10 +121,12 @@ export default function AdminPrograms() {
                 className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div className="sm:col-span-2">
-              <label className="text-sm font-medium">Image URL</label>
-              <input value={form.image_url} onChange={e => setForm({...form, image_url: e.target.value})}
-                placeholder="https://..."
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <ImageInput 
+                label="Program Image" 
+                value={form.image_url} 
+                onChange={(url: string) => setForm({ ...form, image_url: url })} 
+                helperText="Direct upload or external URL"
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="text-sm font-medium">Description</label>

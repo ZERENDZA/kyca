@@ -1,39 +1,43 @@
 import Link from "next/link"
-import { Briefcase, GraduationCap, Calendar, MapPin, ArrowRight, Clock } from "lucide-react"
+import { Briefcase, GraduationCap, Calendar, MapPin, ArrowRight, Clock, ExternalLink } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
-type Event = {
+type Opportunity = {
   id: string
   title: string
-  description: string | null
-  event_date: string
+  org: string
   location: string | null
-  status: string
-  featured: boolean
+  deadline: string | null
+  type: string
+  tag: string | null
+  url: string | null
+  published: boolean
 }
 
-async function getFeaturedEvents(): Promise<Event[]> {
+const typeIconMap: Record<string, React.ElementType> = {
+  Job: Briefcase,
+  Internship: Briefcase,
+  Scholarship: GraduationCap,
+  Volunteer: Calendar,
+  Event: Calendar,
+}
+
+async function getFeaturedOpportunities(): Promise<Opportunity[]> {
   const { data, error } = await supabase
-    .from("events")
-    .select("id, title, description, event_date, location, status, featured")
-    .eq("featured", true)
-    .order("event_date", { ascending: true })
+    .from("opportunities")
+    .select("id, title, org, location, deadline, type, tag, url, published")
+    .eq("published", true)
+    .order("created_at", { ascending: false })
     .limit(3)
 
-  if (error) { console.error("Error fetching events:", error); return [] }
+  if (error) { console.error("Error fetching opportunities:", error); return [] }
   return data || []
 }
 
-function formatDeadline(dateString: string) {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    month: "long", day: "numeric", year: "numeric"
-  })
-}
-
 export async function FeaturedOpportunities() {
-  const events = await getFeaturedEvents()
+  const opportunities = await getFeaturedOpportunities()
 
-  if (events.length === 0) return null
+  if (opportunities.length === 0) return null
 
   return (
     <section className="bg-secondary py-16 lg:py-24">
@@ -49,31 +53,47 @@ export async function FeaturedOpportunities() {
           </Link>
         </div>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {events.map((event) => (
-            <div key={event.id} className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  <Calendar className="h-3.5 w-3.5" /> Event
-                </span>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground capitalize">
-                  {event.status}
-                </span>
-              </div>
-              <h3 className="mt-4 font-serif text-lg font-semibold text-card-foreground">{event.title}</h3>
-              {event.description && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{event.description}</p>
-              )}
-              <div className="mt-auto pt-4 flex flex-col gap-1.5 text-xs text-muted-foreground">
-                {event.location && (
-                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {event.location}</span>
+          {opportunities.map((opp) => {
+            const OppIcon = typeIconMap[opp.type] ?? Briefcase
+            return (
+              <div key={opp.id} className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    <OppIcon className="h-3.5 w-3.5" /> {opp.type}
+                  </span>
+                  {opp.tag && (
+                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground capitalize">
+                      {opp.tag}
+                    </span>
+                  )}
+                </div>
+                <h3 className="mt-4 font-serif text-lg font-semibold text-card-foreground">{opp.title}</h3>
+                <p className="mt-1 text-sm font-medium text-primary">{opp.org}</p>
+                <div className="mt-auto pt-4 flex flex-col gap-1.5 text-xs text-muted-foreground">
+                  {opp.location && (
+                    <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {opp.location}</span>
+                  )}
+                  {opp.deadline && (
+                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {opp.deadline}</span>
+                  )}
+                </div>
+                {opp.url ? (
+                  <a
+                    href={opp.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  >
+                    Apply now <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                ) : (
+                  <Link href="/opportunities" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                    Learn more <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 )}
-                <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {formatDeadline(event.event_date)}</span>
               </div>
-              <Link href="/events" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                Learn more <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

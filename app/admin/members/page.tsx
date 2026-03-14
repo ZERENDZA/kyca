@@ -21,9 +21,21 @@ export default function AdminMembers() {
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", region: "", membership_type: "basic", status: "active" })
 
   async function load() {
-    const res = await fetch("/api/members")
-    setMembers(await res.json())
-    setLoading(false)
+    try {
+      const res = await fetch("/api/members")
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        setMembers(data)
+      } else {
+        console.error("Expected array from /api/members, got:", data)
+        setMembers([])
+      }
+    } catch (e) {
+      console.error("Failed to load members:", e)
+      setMembers([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [])
@@ -62,14 +74,6 @@ export default function AdminMembers() {
             <div><label className="text-sm font-medium">Phone</label><input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
             <div><label className="text-sm font-medium">Region</label><input value={form.region} onChange={e => setForm({...form, region: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" /></div>
             <div>
-              <label className="text-sm font-medium">Membership Type</label>
-              <select value={form.membership_type} onChange={e => setForm({...form, membership_type: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
-                <option value="basic">Basic</option>
-                <option value="premium">Premium</option>
-                <option value="lifetime">Lifetime</option>
-              </select>
-            </div>
-            <div>
               <label className="text-sm font-medium">Status</label>
               <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
                 <option value="active">Active</option>
@@ -92,7 +96,6 @@ export default function AdminMembers() {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Region</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
                 <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
               </tr>
@@ -103,7 +106,6 @@ export default function AdminMembers() {
                   <td className="px-4 py-3 font-medium text-foreground">{m.full_name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{m.email}</td>
                   <td className="px-4 py-3 text-muted-foreground">{m.region}</td>
-                  <td className="px-4 py-3 capitalize text-muted-foreground">{m.membership_type}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${m.status === "active" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
                       {m.status}
@@ -114,7 +116,7 @@ export default function AdminMembers() {
                   </td>
                 </tr>
               ))}
-              {members.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No members yet.</td></tr>}
+              {members.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No members yet.</td></tr>}
             </tbody>
           </table>
         </div>

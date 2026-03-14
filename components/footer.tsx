@@ -69,7 +69,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 shrink-0 text-primary" />
-                <span>+234 800 000 0000</span>
+                <span>Contact via Email/Socials</span>
               </div>
             </div>
             <div className="mt-6 flex gap-3">

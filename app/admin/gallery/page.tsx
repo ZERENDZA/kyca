@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Plus, Trash2, Pencil, Upload, X, Eye, EyeOff } from "lucide-react"
+import { Plus, Trash2, Pencil, X, Eye, EyeOff } from "lucide-react"
+import { ImageInput } from "@/components/admin/ImageInput"
 import { supabase } from "@/lib/supabase"
 import NextImage from "next/image"
 
@@ -23,10 +24,7 @@ export default function AdminGallery() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<GalleryItem | null>(null)
   const [form, setForm] = useState(emptyForm)
-  const [preview, setPreview] = useState<string | null>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     const res = await fetch("/api/gallery")
@@ -36,31 +34,12 @@ export default function AdminGallery() {
 
   useEffect(() => { load() }, [])
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setSelectedFile(file)
-    const reader = new FileReader()
-    reader.onload = () => setPreview(reader.result as string)
-    reader.readAsDataURL(file)
-  }
-
-  async function uploadImage(): Promise<string | null> {
-    if (!selectedFile) return form.image_url || null
-    const fileExt = selectedFile.name.split(".").pop()
-    const fileName = `gallery/${Date.now()}.${fileExt}`
-    const { error } = await supabase.storage.from("gallery").upload(fileName, selectedFile, { upsert: false })
-    if (error) throw new Error(error.message)
-    const { data } = supabase.storage.from("gallery").getPublicUrl(fileName)
-    return data.publicUrl
-  }
 
   async function save() {
     if (!form.title.trim()) { alert("Title is required."); return }
     setUploading(true)
     try {
-      const image_url = await uploadImage()
-      const body = { ...form, image_url: image_url || "" }
+      const body = { ...form }
       if (editing) {
         await fetch("/api/gallery", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, id: editing.id }) })
       } else {
@@ -78,15 +57,12 @@ export default function AdminGallery() {
   function resetForm() {
     setShowForm(false)
     setEditing(null)
-    setSelectedFile(null)
-    setPreview(null)
     setForm(emptyForm)
   }
 
   function edit(item: GalleryItem) {
     setEditing(item)
     setForm({ title: item.title, image_url: item.image_url || "", media_type: item.media_type || "photo", album: item.album || "", published: item.published })
-    setPreview(item.image_url || null)
     setShowForm(true)
   }
 
@@ -103,7 +79,7 @@ export default function AdminGallery() {
           <h1 className="font-serif text-2xl font-bold text-foreground">Gallery</h1>
           <p className="text-sm text-muted-foreground">{items.length} total items</p>
         </div>
-        <button onClick={() => { setShowForm(true); setEditing(null); setForm(emptyForm); setPreview(null) }}
+        <button onClick={() => { setShowForm(true); setEditing(null); setForm(emptyForm) }}
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
           <Plus className="h-4 w-4" /> Add Media
         </button>
@@ -116,23 +92,6 @@ export default function AdminGallery() {
             <button onClick={resetForm}><X className="h-5 w-5 text-muted-foreground" /></button>
           </div>
 
-          {/* Image upload area */}
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="mb-4 relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary cursor-pointer hover:border-primary transition-colors overflow-hidden"
-            style={{ minHeight: 160 }}
-          >
-            {preview ? (
-              <NextImage src={preview} alt="Preview" fill className="object-cover opacity-80" />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground p-6">
-                <Upload className="h-8 w-8" />
-                <p className="text-sm font-medium">Click to upload image</p>
-                <p className="text-xs">Or paste a URL below</p>
-              </div>
-            )}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -148,10 +107,12 @@ export default function AdminGallery() {
                 className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div className="sm:col-span-2">
-              <label className="text-sm font-medium">Image URL <span className="text-muted-foreground text-xs">(or upload above)</span></label>
-              <input value={form.image_url} onChange={e => { setForm({ ...form, image_url: e.target.value }); if (e.target.value) setPreview(e.target.value) }}
-                placeholder="https://..."
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <ImageInput 
+                label="Media Asset" 
+                value={form.image_url} 
+                onChange={(url: string) => setForm({ ...form, image_url: url })} 
+                helperText="Upload a photo or paste a URL"
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Type</label>

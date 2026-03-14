@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute) {
     const session = await getSession();
 
-    if (!session?.userId) {
+    if (!session?.role) {
       // Redirect unauthenticated users to login page
       return NextResponse.redirect(new URL("/admin/login", request.nextUrl));
     }
@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   // Or if they are authenticated and navigating to login, optionally redirect to dashboard
   if (path === "/admin/login") {
     const session = await getSession();
-    if (session?.userId) {
+    if (session?.role) {
        return NextResponse.redirect(new URL("/admin", request.nextUrl));
     }
   }

@@ -8,11 +8,41 @@ type Leader = {
   id: string
   name: string
   role: string
-  bio: string
-  image_url: string
-  region: string
-  order_index: number
-  is_founder: boolean
+  section: "founder" | "executive" | "mentor" | "sponsor"
+  tag?: string
+  image_url?: string
+  display_order: number
+}
+
+const SECTION_THEMES = {
+  founder: {
+    label: "Founders",
+    description: "The visionary individuals who laid the foundation for Kamwe youth connectivity.",
+    badgeClass: "bg-purple-100 text-purple-700",
+    accentClass: "border-purple-500",
+    tagClass: "bg-purple-50 text-purple-600",
+  },
+  executive: {
+    label: "Executive Team",
+    description: "Our dedicated officers managing the day-to-day operations and strategic goals.",
+    badgeClass: "bg-green-100 text-green-700",
+    accentClass: "border-green-500",
+    tagClass: "bg-green-50 text-green-600",
+  },
+  mentor: {
+    label: "Mentors",
+    description: "Experienced professionals providing guidance and wisdom to our youth members.",
+    badgeClass: "bg-amber-100 text-amber-700",
+    accentClass: "border-amber-500",
+    tagClass: "bg-amber-50 text-amber-600",
+  },
+  sponsor: {
+    label: "Sponsors",
+    description: "Distinguished partners whose generosity empowers our programs and reach.",
+    badgeClass: "bg-orange-100 text-orange-700",
+    accentClass: "border-orange-500",
+    tagClass: "bg-orange-50 text-orange-600",
+  },
 }
 
 export default function LeadershipPage() {
@@ -23,100 +53,89 @@ export default function LeadershipPage() {
     fetch("/api/leadership")
       .then(r => r.json())
       .then(data => {
-        const sorted = Array.isArray(data) ? data.sort((a: Leader, b: Leader) => (a.order_index ?? 0) - (b.order_index ?? 0)) : []
-        setLeaders(sorted)
+        setLeaders(Array.isArray(data) ? data : [])
         setLoading(false)
       })
   }, [])
 
-  const executives = leaders.filter(l => !l.is_founder)
-  const founders = leaders.filter(l => l.is_founder)
+  const renderSection = (sectionId: keyof typeof SECTION_THEMES) => {
+    const theme = SECTION_THEMES[sectionId]
+    const sectionLeaders = leaders
+      .filter(l => l.section === sectionId)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+
+    return (
+      <div key={sectionId} className="mb-20 last:mb-0">
+        <div className="mb-10 text-center sm:text-left">
+          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${theme.badgeClass}`}>
+            {theme.label}
+          </span>
+          <h2 className="mt-4 font-serif text-3xl font-bold text-foreground">{theme.label}</h2>
+          <p className="mt-2 text-muted-foreground max-w-2xl">{theme.description}</p>
+        </div>
+
+        {sectionLeaders.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 py-12 text-center text-sm italic text-muted-foreground">
+            Coming soon
+          </div>
+        ) : (
+          <div className="grid gap-8 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
+            {sectionLeaders.map((leader) => (
+              <div key={leader.id} className={`relative pt-1 overflow-hidden transition-all hover:-translate-y-1 group`}>
+                <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full border-t-4 ${theme.accentClass}`} />
+                <div className="flex flex-col items-center p-4">
+                  <div className="relative mb-4 h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-background shadow-md bg-secondary transition-transform group-hover:scale-105">
+                    {leader.image_url ? (
+                      <Image src={leader.image_url} alt={leader.name} fill className="object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center font-serif text-4xl font-bold text-muted-foreground/40">
+                        {leader.name?.[0]}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-serif text-lg font-bold text-foreground leading-tight">{leader.name}</h3>
+                    <p className="mt-1 text-xs font-medium text-primary">{leader.role}</p>
+                    {leader.tag && (
+                      <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${theme.tagClass}`}>
+                        {leader.tag}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
-      {/* Hero */}
-      <section className="bg-secondary py-16 lg:py-20">
+      <section className="bg-secondary/50 py-16 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Who We Are</p>
-            <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Leadership</h1>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Meet the dedicated leaders driving Kamwe Youth Connect Association forward across Nigeria, Cameroon, and the diaspora.
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Impactful Community</p>
+            <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">Leadership Team</h1>
+            <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+              Meet the visionaries, executives, mentors, and sponsors who unite to empower Kamwe youth and preserve our rich heritage globally.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="bg-background py-12 lg:py-20">
+      <section className="bg-background py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           {loading ? (
-            <div className="py-24 text-center text-muted-foreground">Loading leadership...</div>
-          ) : leaders.length === 0 ? (
             <div className="py-24 text-center">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Leadership team coming soon.</p>
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_3s_linear_infinite]" />
+              <p className="mt-4 text-muted-foreground">Loading our community leaders...</p>
             </div>
           ) : (
-            <>
-              {/* Executive Team */}
-              {executives.length > 0 && (
-                <div className="mb-16">
-                  <h2 className="mb-8 font-serif text-2xl font-bold text-foreground">Executive Team</h2>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {executives.map((leader) => (
-                      <div key={leader.id} className="overflow-hidden rounded-xl border border-border bg-card">
-                        <div className="relative aspect-square overflow-hidden bg-secondary">
-                          {leader.image_url ? (
-                            <Image src={leader.image_url} alt={leader.name} fill className="object-cover object-top" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center font-serif text-5xl font-bold text-muted-foreground">
-                              {leader.name?.[0]}
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-5">
-                          <h3 className="font-serif text-lg font-bold text-foreground">{leader.name}</h3>
-                          <p className="text-sm font-medium text-primary">{leader.role}</p>
-                          {leader.region && <p className="text-xs text-muted-foreground mt-0.5">{leader.region}</p>}
-                          {leader.bio && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{leader.bio}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Founders */}
-              {founders.length > 0 && (
-                <div>
-                  <h2 className="mb-8 font-serif text-2xl font-bold text-foreground">Founders</h2>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {founders.map((leader) => (
-                      <div key={leader.id} className="overflow-hidden rounded-xl border border-border bg-card">
-                        <div className="relative aspect-square overflow-hidden bg-secondary">
-                          {leader.image_url ? (
-                            <Image src={leader.image_url} alt={leader.name} fill className="object-cover object-top" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center font-serif text-5xl font-bold text-muted-foreground">
-                              {leader.name?.[0]}
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-5">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-serif text-lg font-bold text-foreground">{leader.name}</h3>
-                            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">Founder</span>
-                          </div>
-                          <p className="text-sm font-medium text-primary">{leader.role}</p>
-                          {leader.region && <p className="text-xs text-muted-foreground mt-0.5">{leader.region}</p>}
-                          {leader.bio && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{leader.bio}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+            <div className="space-y-12">
+              {(["founder", "executive", "mentor", "sponsor"] as const).map(renderSection)}
+            </div>
           )}
         </div>
       </section>

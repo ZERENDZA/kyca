@@ -34,7 +34,7 @@ export default function AdminPayments() {
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Total Received</p>
-          <p className="mt-1 text-2xl font-bold text-foreground">${total.toLocaleString()}</p>
+          <p className="mt-1 text-2xl font-bold text-foreground">₦{total.toLocaleString()}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Completed</p>
@@ -64,7 +64,7 @@ export default function AdminPayments() {
                 <tr key={p.id} className="border-b border-border last:border-b-0 hover:bg-secondary/50">
                   <td className="px-4 py-3 font-medium text-foreground">{p.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.email}</td>
-                  <td className="px-4 py-3 font-medium text-foreground">${p.amount}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">₦{p.amount}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.purpose}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
